@@ -1,0 +1,30 @@
+{
+    "language": {
+        "en": {
+            "en": "English",
+            "ko": "영어"
+        },
+        "ko": {
+            "en": "Korean",
+            "ko": "한국어"
+        }
+    },
+    "mode": {
+        "0": {
+            "en": "Osu! Std",
+            "ko": "스탠다드"
+        },
+        "1": {
+            "en": "Osu! Taiko",
+            "ko": "태고"
+        },
+        "2": {
+            "en": "Osu! Ctb",
+            "ko": "캐치"
+        },
+        "3": {
+            "en": "Osu! Mania",
+            "ko": "매니아"
+        }
+    }
+}

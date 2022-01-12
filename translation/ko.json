@@ -1,0 +1,83 @@
+{
+    "help": {
+        "title": "충봇 사용 설명서",
+        "legend": "<>: 필수 값, []: 선택 값, '': 띄어쓰기 구분",
+        "add_help": "명령어의 사용법은 !도움말 <명령어>를 보시면 됩니다. ",
+        "command": "커맨드",
+        "usage": "사용법",
+        "example": "예시",
+        "description": "설명"
+    },
+    "set": {
+        "set_complete": "설정 완료!",
+        "language": "언어",
+        "property": "설정할 것",
+        "osu_id": "오스 유저 id",
+        "osu_user_url": "오스 유저 url",
+        "or": "또는",
+        "mode": "플레이 모드",
+        "user_not_found": "유저를 찾지 못했습니다. ",
+        "username": "오스 이름"
+    },
+    "beatmap": {
+        "no_map_found": "맵을 찾지 못했습니다.",
+        "main_page": "메인 페이지",
+        "download": "다운로드",
+        "no_vid_download": "비디오 없이 다운로드",
+        "difficulty": "난이도",
+        "aim": "에임",
+        "speed": "연타",
+        "creator": "제작자",
+        "max_combo": "최대 콤보",
+        "passed": "유저가 패스함",
+        "beatmap_id": "비트맵 id",
+        "estimated_pp": "예상 pp"
+    },
+    "com_missing": {
+        "missing_arguments": "변수가 빠졌습니다"
+    },
+    "com_wrong": {
+        "wrong_arguments": "변수가 틀렸거나 아직 지원되지 않습니다"
+    },
+    "recent": {
+        "osu_id": "오스 유저 id",
+        "osu_user_url": "오스 유저 url",
+        "or": "또는",
+        "mode": "플레이 모드",
+        "user_not_found": "유저를 찾지 못했습니다. ",
+        "username": "오스 이름",
+        "osu_user_not_set": "오스 계정이 등록되지 않았습니다. '!도움말 등록'에 더 많은 정보가 있습니다",
+        "of_recent": "님의 최근 플레이",
+        "no_recent_play": "24시간 내 플레이가 없습니다.",
+        "completed": "완료함"
+    },
+    "top": {
+        "osu_id": "오스 유저 id",
+        "osu_user_url": "오스 유저 url",
+        "or": "또는",
+        "mode": "플레이 모드",
+        "user_not_found": "유저를 찾지 못했습니다. ",
+        "username": "오스 이름",
+        "osu_user_not_set": "오스 계정이 등록되지 않았습니다. '!도움말 등록'에 더 많은 정보가 있습니다",
+        "of_top": "님의 최고 플레이",
+        "no_top_play": "최고 플레이를 발견하지 못했습니다. ",
+        "completed": "완료함"
+    },
+    "func_add_embed_play": {
+        "without_choke": "풀콤 시",
+        "max_pp": "최대",
+        "cleared": "클리어 시"
+    },
+    "compare": {
+        "osu_id": "오스 유저 id",
+        "osu_user_url": "오스 유저 url",
+        "or": "또는",
+        "mode": "플레이 모드",
+        "user_not_found": "유저를 찾지 못했습니다. ",
+        "username": "오스 이름",
+        "osu_user_not_set": "오스 계정이 등록되지 않았습니다. '!도움말 등록'에 더 많은 정보가 있습니다",
+        "no_play": "플레이를 발견하지 못했습니다. ",
+        "of": "님의",
+        "play": "플레이"
+    }
+}
