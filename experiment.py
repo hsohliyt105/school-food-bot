@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
-diction = {
-            food_name: "sex",
-            food_date: "sex",
-            food_info: "sex"
-            }
+from PIL import Image, ImageDraw, ImageFont
 
-print(diction)
+sex = ( 1, 2 )
+
+sex[1] = 1
+
+sex[1] = [ bruh for bruh in ( 1, 2, [3, 4, 5] )[2] if bruh == 3 or bruh == 4 ]
+
+print(sex)

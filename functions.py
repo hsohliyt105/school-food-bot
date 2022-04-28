@@ -4,6 +4,7 @@ import os
 import time
 import json
 import asyncio
+import math
 
 import requests
 from dotenv import load_dotenv
@@ -21,7 +22,7 @@ def try_get_school(edu_code, school_name):
     :param edu_code: string, 시도교육청코드. ATPT_OFCDC_SC_CODE에 해당.
     :param school_name: string, 학교 이름.
 
-    :return: tuple(int 반환코드, list[string] 결과). 
+    :return: list(int 반환코드, list[string] 결과). 
         반환코드: 
             == 0: 실패, 검색 결과가 없음.
             == 1: 성공, 한개를 찾음.
@@ -45,7 +46,7 @@ def try_get_school(edu_code, school_name):
         school_data = r.json()['schoolInfo'][1]['row']
 
     except:
-        return (0, [])
+        return [ 0, [] ]
 
     if len(school_data) > 1:
         school_names = []
@@ -56,13 +57,13 @@ def try_get_school(edu_code, school_name):
                 school_code = school_data[0]['SD_SCHUL_CODE']
                 return (1, [school_data['SD_SCHUL_CODE'], school['SCHUL_NM']])
 
-        return (len(school_data), school_names)
+        return [ len(school_data), school_names ]
 
     if len(school_data) == 1:
         school_code = school_data[0]['SD_SCHUL_CODE']
-        return (len(school_data), [school_data[0]['SD_SCHUL_CODE'], school_data[0]['SCHUL_NM']])
+        return [ len(school_data), [school_data[0]['SD_SCHUL_CODE'], school_data[0]['SCHUL_NM']] ]
 
-    return (0, [])
+    return [ 0, [] ]
 
 def get_food_info(edu_code, school_code, start_date, end_date):
     """
@@ -73,7 +74,7 @@ def get_food_info(edu_code, school_code, start_date, end_date):
     :param start_date: string, 시작 날짜. YYYYMMDD 형식. 해당 일자 포괄적.
     :param end_date: string, 시작 날짜. YYYYMMDD 형식. 해당 일자 포괄적.
 
-    :return: tuple(int 반환코드, list[dict] 결과). 
+    :return: list(int 반환코드, list[dict] 결과). 
         반환코드: 
             == 0: 실패, 검색 결과가 없음.
             > 1: 성공, 결과 개수를 표시.
@@ -91,8 +92,8 @@ def get_food_info(edu_code, school_code, start_date, end_date):
                     'Type': 'json',
                     'ATPT_OFCDC_SC_CODE': edu_code,
                     'SD_SCHUL_CODE': school_code,
-                    'MLSV_FROM_YMD': str(start_date),
-                    'MLSV_TO_YMD': str(end_date)
+                    'MLSV_FROM_YMD': start_date,
+                    'MLSV_TO_YMD': end_date
                     }
 
     r = requests.get('https://open.neis.go.kr/hub/mealServiceDietInfo', params=params)
@@ -101,7 +102,7 @@ def get_food_info(edu_code, school_code, start_date, end_date):
         food_data = r.json()['mealServiceDietInfo'][1]['row']
 
     except:
-        return (0, {})
+        return [ 0, {} ]
 
     food_dicts = []
     for food in food_data:
@@ -111,13 +112,13 @@ def get_food_info(edu_code, school_code, start_date, end_date):
             'food_info': food['DDISH_NM']
             })
 
-    return (len(food_data), food_dicts)
+    return [ len(food_data), food_dicts ]
 
-def get_korean_time(offset_date = 0):
+def get_korean_time(offset = 0):
     clock = time.time() + 32400
     cur_time = time.gmtime(clock)
 
-    day = cur_time.tm_mday + offset_date
+    day = cur_time.tm_mday + offset
     mon = cur_time.tm_mon
     year = cur_time.tm_year
 
@@ -172,95 +173,6 @@ def get_my_colour(client, channel):
             colour = member.colour
             return colour
 
-async def try_input_edu(client, message):
-    province_list = ""
-    for province in helper.provinces.keys():
-        province_list += province + "\n"
-                
-    colour = get_my_colour(client, message.channel)
-
-    embed = discord.Embed(description="자치시/도를 선택해주세요. `예: !경기도`", colour=colour)
-    embed.add_field(name="목록", value=province_list)
-
-    edu_list_message = await message.channel.send(embed=embed)
-    recent_time = edu_list_message.created_at
-
-    while True:
-        messages = await message.channel.history(limit=4, after=recent_time).flatten()
-        for mes in messages:
-            if mes.content.startswith("!"):
-                string = mes.content.split()
-
-                if len(string[0]) > 1:
-                    string[0] = string[0][1:]
-                    if string[0] in [ "오늘급식", "내일급식", "이번주급식", "다음주급식" ]:
-                        break
-                else:
-                    break
-
-                for province_name in helper.provinces.keys():
-                    if province_name in string[0]:
-                        await edu_list_message.delete()
-                        return helper.provinces[province_name]
-        
-        await asyncio.sleep(1)
-
-async def try_input_school(client, message, edu_code):
-    find_school_message = await message.channel.send("학교를 검색해주세요. `예: !상동초등학교 -> 상동초등학교 ` `예: !상일 -> 상일중학교, 상일고등학교...`")
-    find_school_deleted = False
-    recent_time = find_school_message.created_at
-
-    while True:
-        messages = await message.channel.history(limit=4, after=recent_time).flatten()
-        for mes in messages:
-            if mes.content.startswith("!"):
-                string = mes.content.split()
-
-                if len(string[0]) > 1:
-                    string[0] = string[0][1:]
-                    if string[0] in [ "오늘급식", "내일급식", "이번주급식", "다음주급식" ]:
-                        break
-                else:
-                    break
-                
-                school_result = try_get_school(edu_code, string[0])
-                if school_result[0] == 0:
-                    no_result_message = await message.channel.send("일치하는 검색 결과가 없습니다. ")
-                    recent_time = no_result_message.created_at
-                    await no_result_message.delete(delay=5)
-                    if not find_school_deleted:
-                        await find_school_message.delete()
-                        find_school_deleted = True
-                    break
-
-                if school_result[0] == 1:
-                    if not find_school_deleted:
-                        await find_school_message.delete()
-                        find_school_deleted = True
-                    return school_result[1]
-
-                if school_result[0] > 1:
-                    school_list = ""
-                    for school in school_result[1]:
-                        school_list += school + "\n"
-
-                    colour = get_my_colour(client, message.channel)
-
-                    embed = discord.Embed(description="검색결과", colour=colour)
-                    embed.add_field(name="목록", value=school_list)
-
-                    list_message = await message.channel.send(embed=embed)
-                    recent_time = list_message.created_at
-                    await list_message.delete(delay=5)
-
-                    if not find_school_deleted:
-                        await find_school_message.delete()
-                        find_school_deleted = True
-
-                    break
-        
-        await asyncio.sleep(1)
-
 def format_food_dict(colour, school_name, date, food_dicts):
     """
     급식 정보를 포맷팅 해주는 함수.
@@ -286,3 +198,46 @@ def to_monday_offset():
     cur_time = time.gmtime(clock)
 
     return cur_time.tm_wday
+
+def get_month_ends(offset = 0):
+    clock = time.time() + 32400
+    cur_time = time.gmtime(clock)
+
+    start_day = 1
+    end_day = 0
+    mon = cur_time.tm_mon + offset
+    year = cur_time.tm_year
+
+    if mon > 12:
+        year += 1
+        mon -= 12
+
+    if mon == 2:
+        end_day = 28
+    elif mon in [ 4, 6, 9, 11 ]:
+        end_day = 30
+    else:
+        end_day = 31
+
+    str_start_day = "0" + str(start_day)
+    str_end_day = str(end_day)
+    str_mon = str(mon)
+    str_year = str(year)
+
+    if mon < 10:
+        str_mon = f'0{str_mon}'
+
+    str_start_time = str_year+str_mon+str_start_day
+    str_end_time = str_year+str_mon+str_end_day
+
+    return str_start_time, str_end_time
+
+def get_day_week(full_date):
+    year1 = int(full_date[0:2])
+    year2 = int(full_date[2:4])
+    month = int(full_date[4:6])
+    if month < 3:
+        month += 12
+    date = int(full_date[6:8])
+
+    return (date + math.floor(13 * (month + 1) / 5) + year2 + math.floor(year2 / 4) + math.floor(year1 / 4) - 2 * year1 - 1) % 7
