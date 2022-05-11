@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 import discord
 
 import helper
+import sql
 
 load_dotenv(encoding="UTF-8")
 EDU_API_KEY = os.getenv("EDU_API_KEY")
@@ -241,3 +242,128 @@ def get_day_week(full_date):
     date = int(full_date[6:8])
 
     return (date + math.floor(13 * (month + 1) / 5) + year2 + math.floor(year2 / 4) + math.floor(year1 / 4) - 2 * year1 - 1) % 7
+
+async def try_input_edu(client, message):
+    province_list = ""
+    for province in helper.provinces.keys():
+        province_list += province + "\n"
+                
+    colour = get_my_colour(client, message.channel)
+
+    embed = discord.Embed(description="자치시/도를 선택해주세요. `예: !경기도`", colour=colour)
+    embed.add_field(name="목록", value=province_list)
+
+    edu_list_message = await message.channel.send(embed=embed)
+    await edu_list_message.delete(delay=helper.waiting_time)
+    recent_time = edu_list_message.created_at
+
+    while True:
+        messages = await message.channel.history(limit=4, after=recent_time).flatten()
+        for mes in messages:
+            if mes.content.startswith("!"):
+                string = mes.content.split()
+
+                if len(string[0]) > 1:
+                    string[0] = string[0][1:]
+                    if string[0] in helper.command_list:
+                        break
+                else:
+                    break
+
+                for province_name in helper.provinces.keys():
+                    if province_name in string[0]:
+                        await edu_list_message.delete()
+                        return helper.provinces[province_name]
+        
+        await asyncio.sleep(1)
+
+async def try_input_school(client, message, edu_code):
+    find_school_message = await message.channel.send("학교를 검색해주세요. `예: !상동초등학교 -> 상동초등학교 ` `예: !상일 -> 상일중학교, 상일고등학교...`")
+    await find_school_message.delete(delay=helper.waiting_time)
+    find_school_deleted = False
+    recent_time = find_school_message.created_at
+
+    while True:
+        messages = await message.channel.history(limit=4, after=recent_time).flatten()
+        for mes in messages:
+            if mes.content.startswith("!"):
+                string = mes.content.split()
+
+                if len(string[0]) > 1:
+                    string[0] = string[0][1:]
+                    if string[0] in helper.command_list:
+                        break
+                else:
+                    break
+                
+                school_result = try_get_school(edu_code, string[0])
+                if school_result[0] == 0:
+                    no_result_message = await message.channel.send("일치하는 학교 검색 결과가 없습니다. 다시 시도해주세요. ")
+                    recent_time = no_result_message.created_at
+                    await no_result_message.delete(delay=5)
+                    if not find_school_deleted:
+                        await find_school_message.delete()
+                        find_school_deleted = True
+                    break
+
+                if school_result[0] == 1:
+                    if not find_school_deleted:
+                        await find_school_message.delete()
+                        find_school_deleted = True
+                    return school_result[1]
+
+                if school_result[0] > 1:
+                    school_list = ""
+                    for school in school_result[1]:
+                        school_list += school + "\n"
+
+                    colour = get_my_colour(client, message.channel)
+
+                    embed = discord.Embed(description="검색결과", colour=colour)
+                    embed.add_field(name="목록", value=school_list)
+
+                    list_message = await message.channel.send(embed=embed)
+                    recent_time = list_message.created_at
+                    await list_message.delete(delay=5)
+
+                    if not find_school_deleted:
+                        await find_school_message.delete()
+                        find_school_deleted = True
+
+                    break
+        
+        await asyncio.sleep(1)
+
+async def get_user_info(client, message):
+    """
+    :return: (str)edu_code, (str)school_code, (str)school_name
+    """
+
+    edu_code = ""
+    school_name = ""
+    school_code = ""
+
+    loaded_user = sql.load_user(message.author.id)
+    if loaded_user is None:
+        try:
+            edu_code = await asyncio.wait_for(try_input_edu(client, message), timeout=helper.waiting_time)
+        except TimeoutError:
+            cancel_message = await message.channel.send(f"{helper.waiting_time}초가 지나 취소되었습니다.")
+            await cancel_message.delete(delay=5)
+            return
+
+        try:
+            school_info = await asyncio.wait_for(try_input_school(client, message, edu_code), timeout=helper.waiting_time)
+            school_code = school_info[0]
+            school_name = school_info[1]
+        except TimeoutError:
+            cancel_message = await message.channel.send(f"{helper.waiting_time}초가 지나 취소되었습니다.")
+            await cancel_message.delete(delay=5)
+            return
+
+    else:
+        edu_code = loaded_user['edu_code']
+        school_code = loaded_user['school_code']
+        school_name = loaded_user['school_name']
+
+    return edu_code, school_code, school_name

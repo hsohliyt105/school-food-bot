@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 import command
 
 load_dotenv(encoding="UTF-8")
-DISCORD_TOKEN = os.getenv("TEST_TOKEN")
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 request_channel_list = [] #channel id
 
 intents = discord.Intents.default()
@@ -62,6 +62,14 @@ async def on_message(message):
 
         elif string[0] == "다음달급식":
             await command.food_image(client, message, 1)
+            return
+
+        elif string[0] == "등록":
+            await command.register(client, message)
+            return
+
+        elif string[0] == "삭제":
+            await command.delete(message)
             return
 
 client.run(DISCORD_TOKEN)

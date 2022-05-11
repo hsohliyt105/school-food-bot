@@ -1,104 +1,14 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
-import io
+import datetime
 
 import discord
 
 import helper
 import functions
 import drawer
-
-async def try_input_edu(client, message):
-    province_list = ""
-    for province in helper.provinces.keys():
-        province_list += province + "\n"
-                
-    colour = functions.get_my_colour(client, message.channel)
-
-    embed = discord.Embed(description="자치시/도를 선택해주세요. `예: !경기도`", colour=colour)
-    embed.add_field(name="목록", value=province_list)
-
-    edu_list_message = await message.channel.send(embed=embed)
-    await edu_list_message.delete(delay=10)
-    recent_time = edu_list_message.created_at
-
-    while True:
-        messages = await message.channel.history(limit=4, after=recent_time).flatten()
-        for mes in messages:
-            if mes.content.startswith("!"):
-                string = mes.content.split()
-
-                if len(string[0]) > 1:
-                    string[0] = string[0][1:]
-                    if string[0] in helper.command_list:
-                        break
-                else:
-                    break
-
-                for province_name in helper.provinces.keys():
-                    if province_name in string[0]:
-                        await edu_list_message.delete()
-                        return helper.provinces[province_name]
-        
-        await asyncio.sleep(1)
-
-async def try_input_school(client, message, edu_code):
-    find_school_message = await message.channel.send("학교를 검색해주세요. `예: !상동초등학교 -> 상동초등학교 ` `예: !상일 -> 상일중학교, 상일고등학교...`")
-    await find_school_message.delete(delay=30)
-    find_school_deleted = False
-    recent_time = find_school_message.created_at
-
-    while True:
-        messages = await message.channel.history(limit=4, after=recent_time).flatten()
-        for mes in messages:
-            if mes.content.startswith("!"):
-                string = mes.content.split()
-
-                if len(string[0]) > 1:
-                    string[0] = string[0][1:]
-                    if string[0] in helper.command_list:
-                        break
-                else:
-                    break
-                
-                school_result = functions.try_get_school(edu_code, string[0])
-                if school_result[0] == 0:
-                    no_result_message = await message.channel.send("일치하는 학교 검색 결과가 없습니다. ")
-                    recent_time = no_result_message.created_at
-                    await no_result_message.delete(delay=5)
-                    if not find_school_deleted:
-                        await find_school_message.delete()
-                        find_school_deleted = True
-                    break
-
-                if school_result[0] == 1:
-                    if not find_school_deleted:
-                        await find_school_message.delete()
-                        find_school_deleted = True
-                    return school_result[1]
-
-                if school_result[0] > 1:
-                    school_list = ""
-                    for school in school_result[1]:
-                        school_list += school + "\n"
-
-                    colour = functions.get_my_colour(client, message.channel)
-
-                    embed = discord.Embed(description="검색결과", colour=colour)
-                    embed.add_field(name="목록", value=school_list)
-
-                    list_message = await message.channel.send(embed=embed)
-                    recent_time = list_message.created_at
-                    await list_message.delete(delay=5)
-
-                    if not find_school_deleted:
-                        await find_school_message.delete()
-                        find_school_deleted = True
-
-                    break
-        
-        await asyncio.sleep(1)
+import sql
 
 async def try_input_food_type(message, food_types):
     input_type_text = "식단 종류가 너무 많습니다. 종류를 선택해주세요: "
@@ -143,22 +53,7 @@ async def help_message(message):
     return
 
 async def food_message(client, message, start_offset, end_offset):
-    try:
-        edu_code = await asyncio.wait_for(try_input_edu(client, message), timeout=10)
-    except:
-        cancel_message = await message.channel.send("10초가 지나 취소되었습니다.")
-        await cancel_message.delete(delay=5)
-        return
-
-    try:
-        school_info = await asyncio.wait_for(try_input_school(client, message, edu_code), timeout=30)
-    except:
-        cancel_message = await message.channel.send("30초가 지나 취소되었습니다.")
-        await cancel_message.delete(delay=5)
-        return
-            
-    school_code = school_info[0]
-    school_name = school_info[1]
+    edu_code, school_code, school_name = await functions.get_user_info(client, message)
 
     if start_offset == end_offset:
         date = functions.get_korean_time(start_offset)
@@ -185,22 +80,7 @@ async def food_message(client, message, start_offset, end_offset):
     return
 
 async def food_image(client, message, month_offset):
-    try:
-        edu_code = await asyncio.wait_for(try_input_edu(client, message), timeout=10)
-    except:
-        cancel_message = await message.channel.send("10초가 지나 취소되었습니다.")
-        await cancel_message.delete(delay=5)
-        return
-
-    try:
-        school_info = await asyncio.wait_for(try_input_school(client, message, edu_code), timeout=30)
-    except:
-        cancel_message = await message.channel.send("30초가 지나 취소되었습니다.")
-        await cancel_message.delete(delay=5)
-        return
-            
-    school_code = school_info[0]
-    school_name = school_info[1]
+    edu_code, school_code, school_name = await functions.get_user_info(client, message)
 
     start_date, end_date = functions.get_month_ends(month_offset)
 
@@ -232,5 +112,67 @@ async def food_image(client, message, month_offset):
     image.filename = "image.png"
     
     await message.channel.send(file=image)
+
+    return
+
+async def register(client, message):
+    try:
+        edu_code = await asyncio.wait_for(functions.try_input_edu(client, message), timeout=helper.waiting_time)
+    except TimeoutError:
+        cancel_message = await message.channel.send(f"{helper.waiting_time}초가 지나 취소되었습니다.")
+        await cancel_message.delete(delay=5)
+        return
+
+    try:
+        school_info = await asyncio.wait_for(functions.try_input_school(client, message, edu_code), timeout=helper.waiting_time)
+    except TimeoutError:
+        cancel_message = await message.channel.send(f"{helper.waiting_time}초가 지나 취소되었습니다.")
+        await cancel_message.delete(delay=5)
+        return
+            
+    school_code = school_info[0]
+    school_name = school_info[1]
+      
+    sql.save_user(message.author, edu_code, school_code, school_name)
+    
+    title = "등록에 성공했습니다!"
+    desc = f"디스코드 id: {message.author.id}\n교육청 코드: {edu_code}\n학교 코드: {school_code}\n학교 이름: {school_name}"
+
+    embed = discord.Embed(title=title, description=desc)
+
+    await message.channel.send(embed=embed)
+
+    return
+
+async def delete(message):
+    if sql.load_user(message.author.id) is None:
+        await message.channel.send("삭제할 정보가 없어요. ")
+        return
+
+    confirm_message = await message.channel.send("정말로 자신의 학교 정보를 삭제하시겠습니까?: `!예` / `!아니오` (다시 등록할 수 있습니다.) ")
+    recent_time = confirm_message.created_at
+    passed_time = 0
+
+    confirmed = False
+
+    while not confirmed:
+        messages = await message.channel.history(limit=4, after=recent_time).flatten()
+        for mes in messages:
+            if mes.content == ("!예"):
+                confirmed = True
+                
+            if mes.content == ("!아니오"):
+                await message.channel.send("취소되었습니다. ")
+                return
+
+        passed_time = datetime.datetime.utcnow() - recent_time
+        if passed_time.total_seconds() > helper.waiting_time:
+            await message.channel.send(f"{helper.waiting_time}초가 지나 취소되었습니다. ")
+            return
+        
+        await asyncio.sleep(1)
+
+    sql.delete_user(message.author.id)
+    await message.channel.send("삭제되었습니다. ")
 
     return
