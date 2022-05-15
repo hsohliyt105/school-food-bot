@@ -2,13 +2,15 @@
 
 import os
 from datetime import datetime
+import asyncio
 
 import discord
 from dotenv import load_dotenv
 
 import command
+import helper
 
-load_dotenv(encoding="UTF-8")
+load_dotenv(dotenv_path=os.path.abspath(os.curdir+os.pardir), encoding="UTF-8")
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 request_channel_list = [] #channel id
 
@@ -19,6 +21,13 @@ client = discord.Client(activity=discord.Game("!도움말"), intents=intents)
 @client.event
 async def on_ready():
     print(f"{client.user}이 디스코드에 접속했어요. ")
+
+    while True:
+        for command in helper.command_list:
+            client.activity = discord.Game(f"!{command}")
+            await asyncio.sleep(60)
+        client.activity = discord.Game(helper.version)
+        await asyncio.sleep(60)
 
 #메시지를 받았을 때의 반응
 @client.event

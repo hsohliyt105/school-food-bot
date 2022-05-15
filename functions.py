@@ -2,9 +2,9 @@
 
 import os
 import time
-import json
 import asyncio
 import math
+import random
 
 import requests
 from dotenv import load_dotenv
@@ -192,6 +192,8 @@ def format_food_dict(colour, school_name, date, food_dicts):
         food_dict['food_info'] = food_dict['food_info'].replace("*", "\*")
         embed.add_field(name=food_dict['food_date']+" "+food_dict['food_name'], value=food_dict['food_info'])
 
+    embed.set_footer(text=random.choice(helper.tip_list))
+
     return embed
 
 def to_monday_offset():
@@ -347,7 +349,7 @@ async def get_user_info(client, message):
     if loaded_user is None:
         try:
             edu_code = await asyncio.wait_for(try_input_edu(client, message), timeout=helper.waiting_time)
-        except TimeoutError:
+        except asyncio.exceptions.CancelledError:
             cancel_message = await message.channel.send(f"{helper.waiting_time}초가 지나 취소되었습니다.")
             await cancel_message.delete(delay=5)
             return
@@ -356,7 +358,7 @@ async def get_user_info(client, message):
             school_info = await asyncio.wait_for(try_input_school(client, message, edu_code), timeout=helper.waiting_time)
             school_code = school_info[0]
             school_name = school_info[1]
-        except TimeoutError:
+        except asyncio.exceptions.CancelledError:
             cancel_message = await message.channel.send(f"{helper.waiting_time}초가 지나 취소되었습니다.")
             await cancel_message.delete(delay=5)
             return

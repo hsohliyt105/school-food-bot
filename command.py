@@ -53,7 +53,10 @@ async def help_message(message):
     return
 
 async def food_message(client, message, start_offset, end_offset):
-    edu_code, school_code, school_name = await functions.get_user_info(client, message)
+    user_info = await functions.get_user_info(client, message)
+    if user_info is None:
+        return
+    edu_code, school_code, school_name = user_info
 
     if start_offset == end_offset:
         date = functions.get_korean_time(start_offset)
@@ -80,7 +83,10 @@ async def food_message(client, message, start_offset, end_offset):
     return
 
 async def food_image(client, message, month_offset):
-    edu_code, school_code, school_name = await functions.get_user_info(client, message)
+    user_info = await functions.get_user_info(client, message)
+    if user_info is None:
+        return
+    edu_code, school_code, school_name = user_info
 
     start_date, end_date = functions.get_month_ends(month_offset)
 
