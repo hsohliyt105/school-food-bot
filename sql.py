@@ -26,6 +26,15 @@ def save_user(user, edu_code, school_code, school_name):
 
     return
 
+def save_subscription(user, subscribe_hour, subscribe_min):
+    conn = pymysql.connect(host="localhost", user="root", db="school_food_bot", password=MYSQL_PASSWORD, charset="utf8", cursorclass=pymysql.cursors.DictCursor)
+    cur = conn.cursor()
+
+    sql = f"UPDATE users SET subscribe_hour='{subscribe_hour}' subscribe_min='{subscribe_min}' WHERE discord_id={user.id}"
+    cur.execute(sql)
+    conn.commit()
+    return 
+
 def load_user(discord_id):
     conn = pymysql.connect(host="localhost", user="root", db="school_food_bot", password=MYSQL_PASSWORD, charset="utf8", cursorclass=pymysql.cursors.DictCursor)
     cur = conn.cursor()

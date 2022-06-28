@@ -16,7 +16,7 @@ import sql
 load_dotenv(encoding="UTF-8")
 EDU_API_KEY = os.getenv("EDU_API_KEY")
 
-def try_get_school(edu_code, school_name):
+def get_school(edu_code, school_name):
     """
     학교의 정보를 찾는 함수.
 
@@ -298,7 +298,7 @@ async def try_input_school(client, message, edu_code):
                 else:
                     break
                 
-                school_result = try_get_school(edu_code, string[0])
+                school_result = get_school(edu_code, string[0])
                 if school_result[0] == 0:
                     no_result_message = await message.channel.send("일치하는 학교 검색 결과가 없습니다. 다시 시도해주세요. ")
                     recent_time = no_result_message.created_at
@@ -349,7 +349,7 @@ async def get_user_info(client, message):
     if loaded_user is None:
         try:
             edu_code = await asyncio.wait_for(try_input_edu(client, message), timeout=helper.waiting_time)
-        except asyncio.exceptions.CancelledError:
+        except asyncio.exceptions.TimeoutError or asyncio.exceptions.CancelledError:
             cancel_message = await message.channel.send(f"{helper.waiting_time}초가 지나 취소되었습니다.")
             await cancel_message.delete(delay=5)
             return
@@ -358,7 +358,7 @@ async def get_user_info(client, message):
             school_info = await asyncio.wait_for(try_input_school(client, message, edu_code), timeout=helper.waiting_time)
             school_code = school_info[0]
             school_name = school_info[1]
-        except asyncio.exceptions.CancelledError:
+        except asyncio.exceptions.TimeoutError or asyncio.exceptions.CancelledError:
             cancel_message = await message.channel.send(f"{helper.waiting_time}초가 지나 취소되었습니다.")
             await cancel_message.delete(delay=5)
             return
@@ -369,3 +369,27 @@ async def get_user_info(client, message):
         school_name = loaded_user['school_name']
 
     return edu_code, school_code, school_name
+
+async def try_input_numbers(message):
+    find_time_message = await message.channel.send("매일 학교 급식 정보를 받을 시간을 정해주세요. 예: 오후 7시 30분 -> `!19 30` ")
+    await find_time_message.delete(delay=helper.waiting_time)
+    recent_time = find_time_message.created_at
+
+    while True:
+        messages = await message.channel.history(limit=4, after=recent_time).flatten()
+        for mes in messages:
+            if mes.content.startswith("!"):
+                string = mes.content.split()
+                string = string[1:]
+
+                if len(string[0]) > 1:
+                    if string[0] in helper.command_list:
+                        break
+
+                if string[0].isdigit() and string[1].isdigit():
+                    hour = int(string[0])
+                    minute = int(string[1])
+                    
+                    return hour, minute
+        
+        await asyncio.sleep(1)

@@ -182,3 +182,28 @@ async def delete(message):
     await message.channel.send("삭제되었습니다. ")
 
     return
+
+async def subscribe(message):
+    if sql.load_user(message.author) is not None:
+        try:
+            hour, minute = await asyncio.wait_for(functions.try_input_time(), helper.waiting_time)
+
+        except asyncio.exceptions.TimeoutError:
+            cancel_message = await message.channel.send(f"{helper.waiting_time}초가 지나 취소되었습니다. ")
+            await cancel_message.delete(delay=5)
+            return
+
+        sql.save_subscription(message.author, hour, minute)
+
+        title = "구독에 성공했습니다!"
+        desc = f"정보를 받을 시간: {hour}시 {minute}분"
+        embed = discord.Embed(title=title, description=desc)
+
+        await message.channel.send(embed=embed)
+
+        return
+        
+    else:
+        await message.channel.send("등록된 정보가 없습니다. `!등록`을 먼저 사용하여 학교 정보를 등록해주세요.")
+
+    return

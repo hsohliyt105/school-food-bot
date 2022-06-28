@@ -37,7 +37,8 @@ def image_food_dict(school_name, food_dicts):
     first_date = food_dicts[1][0]['food_date']
     last_date = food_dicts[1][-1]['food_date']
     first_day = functions.get_day_week(first_date)
-    week_length = int((int(last_date) - int(first_date) + 1 ) / 7 + 1)
+    last_day = functions.get_day_week(last_date)
+    week_length = int((first_day + int(last_date) - int(first_date)) / 7 + 1)
 
     table = list()
 
@@ -60,8 +61,8 @@ def image_food_dict(school_name, food_dicts):
         while assign_day >= 7:
             assign_day -= 7
             assign_week += 1
-
-        food_dict['food_info'] = food_dict['food_info'].replace("<br/>", "\n").replace("*", "\*")
+            
+        food_dict['food_info'] = food_dict['food_info'].replace("<br/>", "\n")
 
         food_date = food_dict['food_date'][6:8]
 
