@@ -14,8 +14,8 @@ import command
 import helper
 
 load_dotenv(dotenv_path=os.path.abspath(os.curdir+os.pardir), encoding="UTF-8")
-DISCORD_TOKEN = os.getenv("TEST_TOKEN") # TEST_TOKEN or DISCORD_TOKEN
-CLIENT_ID = os.getenv("TEST_ID") #TEST_ID or DISCORD_ID
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN") # TEST_TOKEN or DISCORD_TOKEN
+CLIENT_ID = os.getenv("DISCORD_ID") #TEST_ID or DISCORD_ID
 
 intents = discord.Intents.default()
 client = discord.Client(activity=discord.Game("!도움말"), intents=intents)
