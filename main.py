@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from logging import raiseExceptions
 import os
 from datetime import datetime
 import asyncio
@@ -13,7 +14,8 @@ import command
 import helper
 
 load_dotenv(dotenv_path=os.path.abspath(os.curdir+os.pardir), encoding="UTF-8")
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN") # TEST_TOKEN or DISCORD_TOKEN
+DISCORD_TOKEN = os.getenv("TEST_TOKEN") # TEST_TOKEN or DISCORD_TOKEN
+CLIENT_ID = os.getenv("TEST_ID") #TEST_ID or DISCORD_ID
 
 intents = discord.Intents.default()
 client = discord.Client(activity=discord.Game("!도움말"), intents=intents)
@@ -26,8 +28,10 @@ async def change_presence():
         await asyncio.sleep(helper.presence_time)
     client.activity = discord.Game(helper.version)
     await asyncio.sleep(helper.presence_time)
-    client.activity = discord.Game(f"{len(client.guilds)}개의 서버에서 일하는 중")
+    client.activity = discord.Game(f"{len(client.guilds)}개의 서버에서 일")
     await asyncio.sleep(helper.presence_time)
+
+@tasks.loop(minutes=helper.check_minutes)
 
 #가동시의 반응
 @client.event
@@ -105,12 +109,22 @@ async def on_message(message):
                 await command.subscribe(message)
                 return
 
-    except :
-        await message.channel.send("에러가 발생했습니다! *이 에러는 자동으로 제작자가 볼 수 있습니다.*")
+    except discord.errors.Forbidden:
         print(traceback.format_exc())
         with open("error.log", "a") as f:
             err_log = f"{datetime.now()} {message.guild} {message.channel} {message.author} {message.content} \n {traceback.format_exc()}"
             f.write(err_log)
             f.close()
+        await message.channel.send(f"권한 에러가 발생했습니다! 이 링크(https://discord.com/oauth2/authorize?client_id={CLIENT_ID}&permissions=277025441856&scope=bot)를 통해 추방 후 다시 초대해주시길 바랍니다. *이 에러는 자동으로 제작자가 볼 수 있습니다.*")
+
+    except:
+        print(traceback.format_exc())
+        with open("error.log", "a") as f:
+            err_log = f"{datetime.now()} {message.guild} {message.channel} {message.author} {message.content} \n {traceback.format_exc()}"
+            f.write(err_log)
+            f.close()
+        await message.channel.send("에러가 발생했습니다! *이 에러는 자동으로 제작자가 볼 수 있습니다.*")
+
+    return
 
 client.run(DISCORD_TOKEN)
