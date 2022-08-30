@@ -18,7 +18,7 @@ dir_name = os.path.dirname(abspath)
 os.chdir(dir_name)
 
 with open("general.log", "a") as general_log_f:
-    general_log_f(f"{datetime.now()} Started.\n")
+    general_log_f.write(f"{datetime.now()} Started.\n")
 
 load_dotenv(dotenv_path=os.path.abspath(os.curdir+os.pardir), encoding="UTF-8")
 DISCORD_TOKEN = os.getenv("TEST_TOKEN") # TEST_TOKEN or DISCORD_TOKEN
