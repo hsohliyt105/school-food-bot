@@ -326,7 +326,7 @@ async def try_input_school(client, message, edu_code):
 
                     list_message = await message.channel.send(embed=embed)
                     recent_time = list_message.created_at
-                    await list_message.delete(delay=5)
+                    await list_message.delete(delay=15)
 
                     if not find_school_deleted:
                         await find_school_message.delete()

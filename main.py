@@ -13,9 +13,16 @@ from dotenv import load_dotenv
 import command
 import helper
 
+abspath = os.path.abspath(__file__)
+dir_name = os.path.dirname(abspath)
+os.chdir(dir_name)
+
+with open("general.log", "a") as general_log_f:
+    general_log_f(f"{datetime.now()} Started.")
+
 load_dotenv(dotenv_path=os.path.abspath(os.curdir+os.pardir), encoding="UTF-8")
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN") # TEST_TOKEN or DISCORD_TOKEN
-CLIENT_ID = os.getenv("DISCORD_ID") #TEST_ID or DISCORD_ID
+DISCORD_TOKEN = os.getenv("TEST_TOKEN") # TEST_TOKEN or DISCORD_TOKEN
+CLIENT_ID = os.getenv("TEST_ID") #TEST_ID or DISCORD_ID
 
 intents = discord.Intents.default()
 client = discord.Client(activity=discord.Game("!도움말"), intents=intents)
@@ -30,8 +37,6 @@ async def change_presence():
     await asyncio.sleep(helper.presence_time)
     client.activity = discord.Game(f"{len(client.guilds)}개의 서버에서 일")
     await asyncio.sleep(helper.presence_time)
-
-@tasks.loop(minutes=helper.check_minutes)
 
 #가동시의 반응
 @client.event
@@ -53,15 +58,17 @@ async def on_ready():
 @client.event
 async def on_message(message):
     try:
-        if len(message.embeds) > 0:
-            print(f"{datetime.now()} {message.guild} {message.channel} {message.author} title: {message.embeds[0].title} description: {message.embeds[0].description} fields: {message.embeds[0].fields} footer: {message.embeds[0].footer}")
-        else: 
-            print(f"{datetime.now()} {message.guild} {message.channel} {message.author} {message.content}")
-
         if message.author == client.user or message.author.bot:
             return
         
         if message.content.startswith("!"):
+            if len(message.embeds) > 0:
+                with open("general.log", "a") as general_log_f:
+                    general_log_f.write(f"{datetime.now()} {message.guild} {message.channel} {message.author} title: {message.embeds[0].title} description: {message.embeds[0].description} fields: {message.embeds[0].fields} footer: {message.embeds[0].footer}")
+            else: 
+                with open("general.log", "a") as general_log_f:
+                    general_log_f.writeprint(f"{datetime.now()} {message.guild} {message.channel} {message.author} {message.content}")
+
             string = message.content.split()
 
             if len(string[0]) > 1:
