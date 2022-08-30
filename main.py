@@ -18,7 +18,7 @@ dir_name = os.path.dirname(abspath)
 os.chdir(dir_name)
 
 with open("general.log", "a") as general_log_f:
-    general_log_f(f"{datetime.now()} Started.")
+    general_log_f(f"{datetime.now()} Started.\n")
 
 load_dotenv(dotenv_path=os.path.abspath(os.curdir+os.pardir), encoding="UTF-8")
 DISCORD_TOKEN = os.getenv("TEST_TOKEN") # TEST_TOKEN or DISCORD_TOKEN
@@ -64,10 +64,10 @@ async def on_message(message):
         if message.content.startswith("!"):
             if len(message.embeds) > 0:
                 with open("general.log", "a") as general_log_f:
-                    general_log_f.write(f"{datetime.now()} {message.guild} {message.channel} {message.author} title: {message.embeds[0].title} description: {message.embeds[0].description} fields: {message.embeds[0].fields} footer: {message.embeds[0].footer}")
+                    general_log_f.write(f"{datetime.now()} {message.guild} {message.channel} {message.author} title: {message.embeds[0].title} description: {message.embeds[0].description} fields: {message.embeds[0].fields} footer: {message.embeds[0].footer}\n")
             else: 
                 with open("general.log", "a") as general_log_f:
-                    general_log_f.writeprint(f"{datetime.now()} {message.guild} {message.channel} {message.author} {message.content}")
+                    general_log_f.writeprint(f"{datetime.now()} {message.guild} {message.channel} {message.author} {message.content}\n")
 
             string = message.content.split()
 
@@ -119,7 +119,7 @@ async def on_message(message):
     except discord.errors.Forbidden:
         print(traceback.format_exc())
         with open("error.log", "a") as f:
-            err_log = f"{datetime.now()} {message.guild} {message.channel} {message.author} {message.content} \n {traceback.format_exc()}"
+            err_log = f"{datetime.now()} {message.guild} {message.channel} {message.author} {message.content}\n{traceback.format_exc()}\n"
             f.write(err_log)
             f.close()
         await message.channel.send(f"권한 에러가 발생했습니다! 이 링크(https://discord.com/oauth2/authorize?client_id={CLIENT_ID}&permissions=277025441856&scope=bot)를 통해 추방 후 다시 초대해주시길 바랍니다. *이 에러는 자동으로 제작자가 볼 수 있습니다.*")
@@ -127,7 +127,7 @@ async def on_message(message):
     except:
         print(traceback.format_exc())
         with open("error.log", "a") as f:
-            err_log = f"{datetime.now()} {message.guild} {message.channel} {message.author} {message.content} \n {traceback.format_exc()}"
+            err_log = f"{datetime.now()} {message.guild} {message.channel} {message.author} {message.content}\n{traceback.format_exc()}\n"
             f.write(err_log)
             f.close()
         await message.channel.send("에러가 발생했습니다! *이 에러는 자동으로 제작자가 볼 수 있습니다.*")
