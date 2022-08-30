@@ -67,7 +67,7 @@ async def on_message(message):
                     general_log_f.write(f"{datetime.now()} {message.guild} {message.channel} {message.author} title: {message.embeds[0].title} description: {message.embeds[0].description} fields: {message.embeds[0].fields} footer: {message.embeds[0].footer}\n")
             else: 
                 with open("general.log", "a") as general_log_f:
-                    general_log_f.writeprint(f"{datetime.now()} {message.guild} {message.channel} {message.author} {message.content}\n")
+                    general_log_f.write(f"{datetime.now()} {message.guild} {message.channel} {message.author} {message.content}\n")
 
             string = message.content.split()
 
