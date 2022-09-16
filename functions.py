@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
-import os
-import time
-import asyncio
-import math
-import random
+from os import getenv
+from time import time, gmtime
+from asyncio import sleep, wait_for
+from asyncio.exceptions import CancelledError, TimeoutError
+from math import floor
+from random import choice
+from datetime import datetime
 
 import requests
 from dotenv import load_dotenv
@@ -14,7 +16,7 @@ import helper
 import sql
 
 load_dotenv(encoding="UTF-8")
-EDU_API_KEY = os.getenv("EDU_API_KEY")
+EDU_API_KEY = getenv("EDU_API_KEY")
 
 def get_school(edu_code, school_name):
     """
@@ -116,8 +118,8 @@ def get_food_info(edu_code, school_code, start_date, end_date):
     return [ len(food_data), food_dicts ]
 
 def get_korean_time(offset = 0):
-    clock = time.time() + 32400
-    cur_time = time.gmtime(clock)
+    clock = time() + 32400
+    cur_time = gmtime(clock)
 
     day = cur_time.tm_mday + offset
     mon = cur_time.tm_mon
@@ -192,19 +194,19 @@ def format_food_dict(colour, school_name, date, food_dicts):
         food_dict['food_info'] = food_dict['food_info'].replace("*", "\*")
         embed.add_field(name=food_dict['food_date']+" "+food_dict['food_name'], value=food_dict['food_info'])
 
-    embed.set_footer(text=random.choice(helper.tip_list))
+    embed.set_footer(text=choice(helper.tip_list))
 
     return embed
 
 def to_monday_offset():
-    clock = time.time() + 32400
-    cur_time = time.gmtime(clock)
+    clock = time() + 32400
+    cur_time = gmtime(clock)
 
     return cur_time.tm_wday
 
 def get_month_ends(offset = 0):
-    clock = time.time() + 32400
-    cur_time = time.gmtime(clock)
+    clock = time() + 32400
+    cur_time = gmtime(clock)
 
     start_day = 1
     end_day = 0
@@ -243,7 +245,7 @@ def get_day_week(full_date):
         month += 12
     date = int(full_date[6:8])
 
-    return (date + math.floor(13 * (month + 1) / 5) + year2 + math.floor(year2 / 4) + math.floor(year1 / 4) - 2 * year1 - 1) % 7
+    return (date + floor(13 * (month + 1) / 5) + year2 + floor(year2 / 4) + floor(year1 / 4) - 2 * year1 - 1) % 7
 
 async def try_input_edu(client, message):
     province_list = ""
@@ -260,7 +262,7 @@ async def try_input_edu(client, message):
     recent_time = edu_list_message.created_at
 
     while True:
-        messages = await message.channel.history(limit=4, after=recent_time).flatten()
+        messages = await message.channel.history(limit=5, after=recent_time).flatten()
         for mes in messages:
             if mes.content.startswith("!"):
                 string = mes.content.split()
@@ -275,9 +277,17 @@ async def try_input_edu(client, message):
                 for province_name in helper.provinces.keys():
                     if province_name in string[0]:
                         await edu_list_message.delete()
+
+                        if len(mes.embeds) > 0:
+                            with open("general.log", "a") as general_log_f:
+                                general_log_f.write(f"{datetime.now()} {mes.guild} {mes.channel} {mes.author} title: {mes.embeds[0].title} description: {mes.embeds[0].description} fields: {mes.embeds[0].fields} footer: {mes.embeds[0].footer}\n")
+                        else: 
+                            with open("general.log", "a") as general_log_f:
+                                general_log_f.write(f"{datetime.now()} {mes.guild} {mes.channel} {mes.author} {mes.content}\n")
+
                         return helper.provinces[province_name]
         
-        await asyncio.sleep(1)
+        await sleep(1)
 
 async def try_input_school(client, message, edu_code):
     find_school_message = await message.channel.send("학교를 검색해주세요. `예: !상동초등학교 -> 상동초등학교 ` `예: !상일 -> 상일중학교, 상일고등학교...`")
@@ -286,7 +296,7 @@ async def try_input_school(client, message, edu_code):
     recent_time = find_school_message.created_at
 
     while True:
-        messages = await message.channel.history(limit=4, after=recent_time).flatten()
+        messages = await message.channel.history(limit=5, after=recent_time).flatten()
         for mes in messages:
             if mes.content.startswith("!"):
                 string = mes.content.split()
@@ -312,6 +322,14 @@ async def try_input_school(client, message, edu_code):
                     if not find_school_deleted:
                         await find_school_message.delete()
                         find_school_deleted = True
+
+                    if len(mes.embeds) > 0:
+                        with open("general.log", "a") as general_log_f:
+                            general_log_f.write(f"{datetime.now()} {mes.guild} {mes.channel} {mes.author} title: {mes.embeds[0].title} description: {mes.embeds[0].description} fields: {mes.embeds[0].fields} footer: {mes.embeds[0].footer}\n")
+                    else: 
+                        with open("general.log", "a") as general_log_f:
+                            general_log_f.write(f"{datetime.now()} {mes.guild} {mes.channel} {mes.author} {mes.content}\n")
+
                     return school_result[1]
 
                 if school_result[0] > 1:
@@ -334,7 +352,7 @@ async def try_input_school(client, message, edu_code):
 
                     break
         
-        await asyncio.sleep(1)
+        await sleep(1)
 
 async def get_user_info(client, message):
     """
@@ -348,17 +366,17 @@ async def get_user_info(client, message):
     loaded_user = sql.load_user(message.author.id)
     if loaded_user is None:
         try:
-            edu_code = await asyncio.wait_for(try_input_edu(client, message), timeout=helper.waiting_time)
-        except asyncio.exceptions.TimeoutError or asyncio.exceptions.CancelledError:
+            edu_code = await wait_for(try_input_edu(client, message), timeout=helper.waiting_time)
+        except TimeoutError or CancelledError:
             cancel_message = await message.channel.send(f"{helper.waiting_time}초가 지나 취소되었습니다.")
             await cancel_message.delete(delay=5)
             return
 
         try:
-            school_info = await asyncio.wait_for(try_input_school(client, message, edu_code), timeout=helper.waiting_time)
+            school_info = await wait_for(try_input_school(client, message, edu_code), timeout=helper.waiting_time)
             school_code = school_info[0]
             school_name = school_info[1]
-        except asyncio.exceptions.TimeoutError or asyncio.exceptions.CancelledError:
+        except TimeoutError or CancelledError:
             cancel_message = await message.channel.send(f"{helper.waiting_time}초가 지나 취소되었습니다.")
             await cancel_message.delete(delay=5)
             return
@@ -370,13 +388,13 @@ async def get_user_info(client, message):
 
     return edu_code, school_code, school_name
 
-async def try_input_numbers(message):
+async def try_input_time(message):
     find_time_message = await message.channel.send("매일 학교 급식 정보를 받을 시간을 정해주세요. 예: 오후 7시 30분 -> `!19 30` ")
     await find_time_message.delete(delay=helper.waiting_time)
     recent_time = find_time_message.created_at
 
     while True:
-        messages = await message.channel.history(limit=4, after=recent_time).flatten()
+        messages = await message.channel.history(limit=5, after=recent_time).flatten()
         for mes in messages:
             if mes.content.startswith("!"):
                 string = mes.content.split()
@@ -389,7 +407,41 @@ async def try_input_numbers(message):
                 if string[0].isdigit() and string[1].isdigit():
                     hour = int(string[0])
                     minute = int(string[1])
+
+                    if len(mes.embeds) > 0:
+                        with open("general.log", "a") as general_log_f:
+                            general_log_f.write(f"{datetime.now()} {mes.guild} {mes.channel} {mes.author} title: {mes.embeds[0].title} description: {mes.embeds[0].description} fields: {mes.embeds[0].fields} footer: {mes.embeds[0].footer}\n")
+                    else: 
+                        with open("general.log", "a") as general_log_f:
+                            general_log_f.write(f"{datetime.now()} {mes.guild} {mes.channel} {mes.author} {mes.content}\n")
                     
                     return hour, minute
         
-        await asyncio.sleep(1)
+        await sleep(1)
+
+async def try_confirm(message, start_time):
+
+    while True:
+        messages = await message.channel.history(limit=5, after=start_time).flatten()
+        for mes in messages:
+            if mes.content == ("!예"):
+                if len(mes.embeds) > 0:
+                    with open("general.log", "a") as general_log_f:
+                        general_log_f.write(f"{datetime.now()} {mes.guild} {mes.channel} {mes.author} title: {mes.embeds[0].title} description: {mes.embeds[0].description} fields: {mes.embeds[0].fields} footer: {mes.embeds[0].footer}\n")
+                else: 
+                    with open("general.log", "a") as general_log_f:
+                        general_log_f.write(f"{datetime.now()} {mes.guild} {mes.channel} {mes.author} {mes.content}\n")
+
+                return True
+                
+            if mes.content == ("!아니오"):
+                if len(mes.embeds) > 0:
+                    with open("general.log", "a") as general_log_f:
+                        general_log_f.write(f"{datetime.now()} {mes.guild} {mes.channel} {mes.author} title: {mes.embeds[0].title} description: {mes.embeds[0].description} fields: {mes.embeds[0].fields} footer: {mes.embeds[0].footer}\n")
+                else: 
+                    with open("general.log", "a") as general_log_f:
+                        general_log_f.write(f"{datetime.now()} {mes.guild} {mes.channel} {mes.author} {mes.content}\n")
+
+                return False
+
+        await sleep(1)

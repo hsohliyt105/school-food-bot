@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import io
+from io import BytesIO
 
 from PIL import ImageFont, ImageDraw, Image
 
-import functions
-import helper
+from functions import get_day_week
+from helper import int_to_day
 
 def image_food_dict(school_name, food_dicts):
     """
@@ -36,8 +36,8 @@ def image_food_dict(school_name, food_dicts):
 
     first_date = food_dicts[1][0]['food_date']
     last_date = food_dicts[1][-1]['food_date']
-    first_day = functions.get_day_week(first_date)
-    last_day = functions.get_day_week(last_date)
+    first_day = get_day_week(first_date)
+    last_day = get_day_week(last_date)
     week_length = int((first_day + int(last_date) - int(first_date)) / 7 + 1)
 
     table = list()
@@ -105,7 +105,7 @@ def image_food_dict(school_name, food_dicts):
     draw.multiline_text((background_width*0.5, top_margin*0.5), title, font=title_f, fill=0, anchor="mm", align="center")
     
     for i in range(len(week_presence)):
-        draw.text((left_margin+box_width*(0.5+i), top_margin+box_margin), helper.int_to_day[week_presence[i]], font=content_f, fill=0, anchor="mt")
+        draw.text((left_margin+box_width*(0.5+i), top_margin+box_margin), int_to_day[week_presence[i]], font=content_f, fill=0, anchor="mt")
 
     for i in range(len(table)):
         for j in range(len(week_presence)):
@@ -114,7 +114,7 @@ def image_food_dict(school_name, food_dicts):
             
             draw.multiline_text((left_margin+box_width*(j+0.5), top_margin+week_box_height+box_height*i+box_margin), table[i][week_presence[j]], font=content_f, fill=0, anchor="ma", align="center")
 
-    file = io.BytesIO()
+    file = BytesIO()
     background.save(file, "PNG")
     file.seek(0)
 

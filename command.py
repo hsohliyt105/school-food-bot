@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import asyncio
-import datetime
+from asyncio import CancelledError, TimeoutError, sleep, wait_for
+from datetime import datetime
 
-import discord
+from discord import File, Embed
 
 import helper
 import functions
@@ -41,12 +41,12 @@ async def try_input_food_type(message, food_types):
                     await input_type_message.delete()
                     return chosen_food_type
         
-        await asyncio.sleep(1)
+        await sleep(1)
 
 async def help_message(message):
     command_list_text = f"`{'`, `'.join(helper.command_list)}`"
 
-    embed = discord.Embed(title="명령어 목록", description=command_list_text)
+    embed = Embed(title="명령어 목록", description=command_list_text)
 
     await message.channel.send(embed=embed)
 
@@ -104,7 +104,7 @@ async def food_image(client, message, month_offset):
 
     if len(available_type) > 1:
         try:
-            food_type = await asyncio.wait_for(try_input_food_type(message, available_type), timeout=30)
+            food_type = await wait_for(try_input_food_type(message, available_type), timeout=30)
         except:
             cancel_message = await message.channel.send("30초가 지나 취소되었습니다.")
             await cancel_message.delete(delay=5)
@@ -114,7 +114,7 @@ async def food_image(client, message, month_offset):
 
     f = drawer.image_food_dict(school_name, food_dicts)
 
-    image = discord.File(f)
+    image = File(f)
     image.filename = "image.png"
     
     await message.channel.send(file=image)
@@ -123,14 +123,14 @@ async def food_image(client, message, month_offset):
 
 async def register(client, message):
     try:
-        edu_code = await asyncio.wait_for(functions.try_input_edu(client, message), timeout=helper.waiting_time)
+        edu_code = await wait_for(functions.try_input_edu(client, message), timeout=helper.waiting_time)
     except TimeoutError:
         cancel_message = await message.channel.send(f"{helper.waiting_time}초가 지나 취소되었습니다.")
         await cancel_message.delete(delay=5)
         return
 
     try:
-        school_info = await asyncio.wait_for(functions.try_input_school(client, message, edu_code), timeout=helper.waiting_time)
+        school_info = await wait_for(functions.try_input_school(client, message, edu_code), timeout=helper.waiting_time)
     except TimeoutError:
         cancel_message = await message.channel.send(f"{helper.waiting_time}초가 지나 취소되었습니다.")
         await cancel_message.delete(delay=5)
@@ -144,7 +144,7 @@ async def register(client, message):
     title = "등록에 성공했습니다!"
     desc = f"디스코드 id: {message.author.id}\n교육청 코드: {edu_code}\n학교 코드: {school_code}\n학교 이름: {school_name}"
 
-    embed = discord.Embed(title=title, description=desc)
+    embed = Embed(title=title, description=desc)
 
     await message.channel.send(embed=embed)
 
@@ -156,39 +156,31 @@ async def delete(message):
         return
 
     confirm_message = await message.channel.send("정말로 자신의 학교 정보를 삭제하시겠습니까?: `!예` / `!아니오` (다시 등록할 수 있습니다.) ")
-    recent_time = confirm_message.created_at
-    passed_time = 0
+    start_time = confirm_message.created_at
+    await confirm_message.delete(delay=helper.waiting_time)
 
-    confirmed = False
-
-    while not confirmed:
-        messages = await message.channel.history(limit=4, after=recent_time).flatten()
-        for mes in messages:
-            if mes.content == ("!예"):
-                confirmed = True
-                
-            if mes.content == ("!아니오"):
-                await message.channel.send("취소되었습니다. ")
-                return
-
-        passed_time = datetime.datetime.utcnow() - recent_time
-        if passed_time.total_seconds() > helper.waiting_time:
-            await message.channel.send(f"{helper.waiting_time}초가 지나 취소되었습니다. ")
+    try:
+        confirmed = await wait_for(functions.try_confirm(message, start_time), helper.waiting_time)
+    except TimeoutError and CancelledError:
+            cancel_message = await message.channel.send(f"{helper.waiting_time}초가 지나 취소되었습니다. ")
+            await cancel_message.delete(delay=5)
             return
-        
-        await asyncio.sleep(1)
 
-    sql.delete_user(message.author.id)
-    await message.channel.send("삭제되었습니다. ")
+    if confirmed:
+        sql.delete_user(message.author.id)
+        await message.channel.send("삭제되었습니다. ")
+
+    else:
+        await message.channel.send("취소되었습니다. ")
 
     return
 
 async def subscribe(message):
     if sql.load_user(message.author) is not None:
         try:
-            hour, minute = await asyncio.wait_for(functions.try_input_time(), helper.waiting_time)
+            hour, minute = await wait_for(functions.try_input_time(), helper.waiting_time)
 
-        except asyncio.exceptions.TimeoutError:
+        except TimeoutError and CancelledError:
             cancel_message = await message.channel.send(f"{helper.waiting_time}초가 지나 취소되었습니다. ")
             await cancel_message.delete(delay=5)
             return
@@ -197,7 +189,7 @@ async def subscribe(message):
 
         title = "구독에 성공했습니다!"
         desc = f"정보를 받을 시간: {hour}시 {minute}분"
-        embed = discord.Embed(title=title, description=desc)
+        embed = Embed(title=title, description=desc)
 
         await message.channel.send(embed=embed)
 
