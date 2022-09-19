@@ -2,14 +2,14 @@
 
 from os import getenv
 
-from pymysql import connect
+from pymysql import connect, cursors
 from dotenv import load_dotenv
 
 load_dotenv(encoding="UTF-8")
 MYSQL_PASSWORD = getenv("MYSQL_PASSWORD")
 
 def save_user(user, edu_code, school_code, school_name):
-    conn = connect(host="localhost", user="root", db="school_food_bot", password=MYSQL_PASSWORD, charset="utf8", cursorclass=pymysql.cursors.DictCursor)
+    conn = connect(host="localhost", user="root", db="school_food_bot", password=MYSQL_PASSWORD, charset="utf8", cursorclass=cursors.DictCursor)
     cur = conn.cursor()
 
     try:
@@ -27,7 +27,7 @@ def save_user(user, edu_code, school_code, school_name):
     return
 
 def save_subscription(user, subscribe_hour, subscribe_min):
-    conn = connect(host="localhost", user="root", db="school_food_bot", password=MYSQL_PASSWORD, charset="utf8", cursorclass=pymysql.cursors.DictCursor)
+    conn = connect(host="localhost", user="root", db="school_food_bot", password=MYSQL_PASSWORD, charset="utf8", cursorclass=cursors.DictCursor)
     cur = conn.cursor()
 
     sql = f"UPDATE users SET subscribe_hour='{subscribe_hour}' subscribe_min='{subscribe_min}' WHERE discord_id={user.id}"
@@ -36,7 +36,7 @@ def save_subscription(user, subscribe_hour, subscribe_min):
     return 
 
 def load_user(discord_id):
-    conn = connect(host="localhost", user="root", db="school_food_bot", password=MYSQL_PASSWORD, charset="utf8", cursorclass=pymysql.cursors.DictCursor)
+    conn = connect(host="localhost", user="root", db="school_food_bot", password=MYSQL_PASSWORD, charset="utf8", cursorclass=cursors.DictCursor)
     cur = conn.cursor()
 
     sql = f"SELECT * FROM users WHERE discord_id={discord_id}"
@@ -50,7 +50,7 @@ def load_user(discord_id):
     return result[0]
 
 def delete_user(discord_id):
-    conn = connect(host="localhost", user="root", db="school_food_bot", password=MYSQL_PASSWORD, charset="utf8", cursorclass=pymysql.cursors.DictCursor)
+    conn = connect(host="localhost", user="root", db="school_food_bot", password=MYSQL_PASSWORD, charset="utf8", cursorclass=cursors.DictCursor)
     cur = conn.cursor()
 
     sql = f"DELETE FROM users WHERE discord_id={discord_id}"
